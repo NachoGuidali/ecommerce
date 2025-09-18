@@ -1,0 +1,120 @@
+{# store/templates/store/index.html #}
+{% extends 'store/base.html' %}
+{% load static %}
+
+{% block title %}Inicio – Brooklyn Store{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper/swiper-bundle.min.css"/>
+{% endblock %}
+
+{% block content %}
+  <!-- Hero slider -->
+  <div class="swiper h-banner-lg mb-8 scroll-item">
+    <div class="swiper-wrapper">
+      <div class="swiper-slide">
+        <img
+          src="{% static 'images/banner1.png' %}"
+          class="w-full h-full object-contain object-center mx-auto rounded"
+          alt="Banner 1"
+        />
+      </div>
+      <div class="swiper-slide">
+        <img
+          src="{% static 'images/banner2.png' %}"
+          class="w-full h-full object-contain object-center mx-auto rounded"
+          alt="Banner 2"
+        />
+      </div>
+      <div class="swiper-slide">
+        <img
+          src="{% static 'images/banner3.png' %}"
+          class="w-full h-full object-contain object-center mx-auto rounded"
+          alt="Banner 3"
+        />
+      </div>
+    </div>
+    <div class="swiper-button-prev"></div>
+    <div class="swiper-button-next"></div>
+  </div>
+
+  <!-- Segunda sección de fotos + botón Categorías -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 scroll-item">
+    <img
+      src="{% static 'images/sec1.png' %}"
+      class="w-full h-section-lg object-contain object-center mx-auto rounded"
+      alt="Sección 1"
+    />
+    <img
+      src="{% static 'images/sec2.png' %}"
+      class="w-full h-section-lg object-contain object-center mx-auto rounded"
+      alt="Sección 2"
+    />
+  </div>
+  <div class="text-center mb-12 scroll-item">
+    <a
+      href="{% url 'store:categories' %}"
+      class="bg-indigo-600 text-white px-6 py-3 rounded hover:bg-indigo-700"
+    >
+      Categorías
+    </a>
+  </div>
+
+  <!-- Productos Destacados -->
+  <h2 class="text-2xl font-semibold mb-4 scroll-item">Productos Destacados</h2>
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12 scroll-item">
+    {% for producto in productos %}
+      <div class="bg-white rounded shadow p-4 flex flex-col scroll-item">
+        <a href="{% url 'store:product_detail' producto.id %}">
+          {% if producto.imagen %}
+            <img
+              src="{{ producto.imagen.url }}"
+              alt="{{ producto.nombre }}"
+              class="w-full h-40 object-contain object-center mx-auto rounded"
+            />
+          {% else %}
+            <img
+              src="{% static 'images/no-image.jpg' %}"
+              alt="Sin imagen disponible"
+              class="w-full h-40 object-contain object-center mx-auto rounded"
+            />
+          {% endif %}
+        </a>
+        <h3 class="mt-3 font-medium">{{ producto.nombre }}</h3>
+        <p class="text-indigo-600 font-semibold">${{ producto.precio }}</p>
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- Redes Sociales -->
+  <div class="text-center mb-8 scroll-item">
+    <a href="https://wa.me/5491130125525" class="mx-2">
+      <img
+        src="{% static 'images/whatsapp.png' %}"
+        class="inline w-8 h-8 object-contain"
+        alt="WhatsApp"
+      />
+    </a>
+    <a href="https://instagram.com/supregsolutions" class="mx-2">
+      <img
+        src="{% static 'images/instagram.png' %}"
+        class="inline w-8 h-8 object-contain"
+        alt="Instagram"
+      />
+    </a>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="https://cdn.jsdelivr.net/npm/swiper/swiper-bundle.min.js"></script>
+  <script>
+    new Swiper('.swiper', {
+      loop: true,
+      autoplay: { delay: 3000 },
+      navigation: {
+        nextEl: '.swiper-button-next',
+        prevEl: '.swiper-button-prev'
+      }
+    });
+  </script>
+{% endblock %}

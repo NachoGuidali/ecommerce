@@ -1,0 +1,79 @@
+{% extends 'store/base.html' %}
+{% load static %}
+
+{% block title %}Administrar pedidos – Brooklyn Store{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">Administrar pedidos</h1>
+
+<form method="get" class="bg-white rounded shadow p-4 mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+  <div>
+    <label class="block text-sm font-medium mb-1">Buscar</label>
+    <input type="text" name="q" value="{{ f_q }}" placeholder="Nombre, DNI, tracking, localidad"
+           class="w-full border rounded px-3 py-2" />
+  </div>
+
+  <div>
+    <label class="block text-sm font-medium mb-1">Estado</label>
+    <select name="estado" class="w-full border rounded px-3 py-2">
+      <option value="">Todos</option>
+      <option value="pendiente"  {% if f_estado == 'pendiente' %}selected{% endif %}>Pendiente</option>
+      <option value="realizado"  {% if f_estado == 'realizado' %}selected{% endif %}>Pago Realizado</option>
+      <option value="rechazado"  {% if f_estado == 'rechazado' %}selected{% endif %}>Rechazado</option>
+    </select>
+  </div>
+
+  <div class="flex items-end">
+    <button type="submit"
+            class="bg-indigo-600 text-white px-6 py-2 rounded hover:bg-indigo-700">
+      Filtrar
+    </button>
+  </div>
+</form>
+
+<div class="bg-white rounded shadow overflow-x-auto">
+  <table class="min-w-full table-auto">
+    <thead class="bg-gray-50">
+      <tr>
+        <th class="text-left px-4 py-3">#</th>
+        <th class="text-left px-4 py-3">Fecha</th>
+        <th class="text-left px-4 py-3">Cliente</th>
+        <th class="text-left px-4 py-3">Pago</th>
+        <th class="text-left px-4 py-3">Total</th>
+        <th class="text-left px-4 py-3">Estado</th>
+        <th class="text-left px-4 py-3">Tracking</th>
+        <th class="text-right px-4 py-3">Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in pedidos %}
+      <tr class="border-t">
+        <td class="px-4 py-3">#{{ p.id }}</td>
+        <td class="px-4 py-3">{{ p.fecha|date:"d/m/Y H:i" }}</td>
+        <td class="px-4 py-3">{{ p.buyer_name }}<br><span class="text-xs text-gray-600">{{ p.buyer_dni }}</span></td>
+        <td class="px-4 py-3">{{ p.get_payment_method_display }}</td>
+        <td class="px-4 py-3">${{ p.total }}</td>
+        <td class="px-4 py-3">
+          {% if p.estado == 'pendiente' %}
+            <span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded">Pendiente</span>
+          {% elif p.estado == 'realizado' %}
+            <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">Pago Realizado</span>
+          {% else %}
+            <span class="bg-red-100 text-red-800 text-xs px-2 py-1 rounded">Rechazado</span>
+          {% endif %}
+        </td>
+        <td class="px-4 py-3">{{ p.tracking_number|default:"—" }}</td>
+        <td class="px-4 py-3 text-right">
+          <a href="{% url 'store:admin_order_detail' p.id %}"
+             class="inline-block bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700">
+            Ver / Editar
+          </a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="8" class="px-4 py-6 text-center text-gray-500">No hay pedidos.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,297 @@
+{# store/templates/store/products.html #}
+{% extends 'store/base.html' %}
+{% load static %}
+
+{% block title %}Productos – Brooklyn Store{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper/swiper-bundle.min.css"/>
+  <style>
+    /* MODALES */
+    .modal { display: none; }
+    .modal.active { display: flex; }
+
+    /* SWATCHES */
+    .color-swatch {
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid #ddd;
+      /* background-color removed so inline style shows actual color */
+      cursor: pointer;
+      margin-right: .5rem;
+    }
+    .color-swatch.selected {
+      border-color: #4F46E5;
+    }
+
+    /* Oculta scrollbars */
+    .no-scrollbar::-webkit-scrollbar { display: none }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <!-- HEADER DE PRODUCTOS -->
+  <div class="bg-gray-100 py-8 px-6 mb-6 text-center scroll-item">
+    <h1 class="text-3xl font-bold mb-4">Productos</h1>
+    <div class="inline-flex space-x-6">
+      <button data-gender="" class="btn-gender font-semibold">Todos</button>
+      <button data-gender="hombre" class="btn-gender font-semibold">Hombre</button>
+      <button data-gender="mujer" class="btn-gender font-semibold">Mujer</button>
+    </div>
+  </div>
+
+  <!-- FILTROS + BUSCADOR -->
+  <div class="flex flex-col md:flex-row items-center justify-between gap-4 px-6 mb-8 scroll-item">
+    <input
+      type="text"
+      id="search-input"
+      placeholder="Buscar productos..."
+      class="border px-4 py-2 rounded w-full md:w-1/3"
+    />
+    <select id="category-select" class="border px-4 py-2 rounded w-full md:w-1/4">
+      <option value="">Todas las categorías</option>
+      {% for categoria in categorias %}
+        <option value="{{ categoria.id }}">{{ categoria.nombre }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <!-- GRID DE PRODUCTOS -->
+  <div id="productos-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 px-6 mb-12 scroll-item">
+    {% for producto in productos %}
+      <div
+        class="producto-card bg-white rounded-lg shadow p-4 cursor-pointer scroll-item"
+        data-nombre="{{ producto.nombre|lower }}"
+        data-genero="{{ producto.genero }}"
+        data-categoria="{{ producto.categoria.id }}"
+        data-pid="{{ producto.id }}"
+      >
+        <img
+          src="{% if producto.imagen %}{{ producto.imagen.url }}{% else %}{% static 'images/no-image.jpg' %}{% endif %}"
+          alt="{{ producto.nombre }}"
+          class="w-full h-section-lg object-contain object-center rounded"
+        />
+        <h3 class="mt-2 font-medium">{{ producto.nombre }}</h3>
+        <p class="text-indigo-600 font-semibold">${{ producto.precio }}</p>
+      </div>
+    {% empty %}
+      <p class="px-6">No hay productos disponibles.</p>
+    {% endfor %}
+  </div>
+
+  <!-- MODALES PRE-RENDERIZADOS -->
+  {% for producto in productos %}
+    <div
+      id="modal-{{ producto.id }}"
+      class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50 p-4"
+    >
+      <div class="bg-white rounded-lg w-full max-w-4xl overflow-auto relative">
+        <button
+          type="button"
+          class="absolute top-4 right-4 text-2xl font-bold focus:outline-none"
+          onclick="closeModal({{ producto.id }})"
+        >&times;</button>
+        <div class="md:flex">
+          <!-- Swiper Galería -->
+          <div class="md:w-1/2 scroll-item">
+            <div class="swiper swiper-{{ producto.id }}">
+              <div class="swiper-wrapper">
+                {% for img in producto.imagenes.all %}
+                  <div class="swiper-slide">
+                    <img
+                      src="{{ img.imagen.url }}"
+                      alt=""
+                      class="w-full h-64 object-contain object-center rounded"
+                    />
+                  </div>
+                {% empty %}
+                  <div class="swiper-slide">
+                    <img
+                      src="{% static 'images/no-image.jpg' %}"
+                      alt="Sin imagen"
+                      class="w-full h-64 object-contain object-center rounded"
+                    />
+                  </div>
+                {% endfor %}
+              </div>
+              <div class="swiper-button-prev swiper-prev-{{ producto.id }}"></div>
+              <div class="swiper-button-next swiper-next-{{ producto.id }}"></div>
+            </div>
+          </div>
+
+          <!-- Detalle + Form -->
+          <div class="md:w-1/2 p-6 scroll-item">
+            <h2 class="text-2xl font-bold">{{ producto.nombre }}</h2>
+            <p class="mt-2 text-xl font-semibold">${{ producto.precio }}</p>
+            <p class="mt-4 text-gray-700">{{ producto.descripcion }}</p>
+
+            <form
+              action="{% url 'store:add_to_cart' producto.id %}"
+              method="post"
+              class="mt-6 space-y-4"
+            >
+              {% csrf_token %}
+
+              <!-- Selector de Talle -->
+              <div>
+                <label class="block font-medium">Talle</label>
+                <select
+                  name="talle"
+                  id="talle-{{ producto.id }}"
+                  class="border px-3 py-2 rounded w-full"
+                  required
+                >
+                  <option value="">-- Elige un talle --</option>
+                  {% for t in producto.talles.all %}
+                    {% if t.stock_total > 0 %}
+                      <option value="{{ t.talle }}">{{ t.talle }}</option>
+                    {% endif %}
+                  {% endfor %}
+                </select>
+              </div>
+
+              <!-- Swatches de Color -->
+              <div>
+                <span class="block font-medium mb-2">Color</span>
+                <div id="colors-{{ producto.id }}" class="flex flex-wrap no-scrollbar">
+                  {% for t in producto.talles.all %}
+                    {% for c in t.colores.all %}
+                      {% if c.stock > 0 %}
+                        <span
+                          class="color-swatch hidden"
+                          data-talle="{{ t.talle }}"
+                          data-color="{{ c.color }}"
+                          data-stock="{{ c.stock }}"
+                          style="background-color: {{ c.color|lower }};"
+                          onclick="selectColor(this)"
+                          title="{{ c.color }}"
+                        ></span>
+                      {% endif %}
+                    {% endfor %}
+                  {% endfor %}
+                </div>
+                <input
+                  type="hidden"
+                  name="color"
+                  id="selected-color-{{ producto.id }}"
+                  required
+                />
+              </div>
+
+              <!-- Stock Disponible -->
+              <p id="stock-info-{{ producto.id }}" class="text-sm text-gray-600 mb-2">
+                Stock disponible: <span>—</span>
+              </p>
+
+              <!-- Campo Cantidad -->
+              <div>
+                <label class="block font-medium">Cantidad</label>
+                <input
+                  type="number"
+                  name="quantity"
+                  value="1"
+                  min="1"
+                  max="1"
+                  required
+                  class="border px-3 py-2 rounded w-full"
+                />
+              </div>
+
+              <!-- Botón o Sin stock -->
+              {% if producto.stock_total > 0 %}
+                <button
+                  type="submit"
+                  class="w-full bg-indigo-600 text-white py-3 rounded font-bold hover:bg-indigo-700"
+                >
+                  Agregar al carrito
+                </button>
+              {% else %}
+                <div class="text-red-600 font-bold">Sin stock</div>
+              {% endif %}
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+{% endblock %}
+
+{% block scripts %}
+  <script src="https://cdn.jsdelivr.net/npm/swiper/swiper-bundle.min.js"></script>
+  <script>
+    // Inicializa Swiper para cada modal
+    {% for producto in productos %}
+      new Swiper('.swiper-{{ producto.id }}', {
+        navigation: {
+          nextEl: '.swiper-next-{{ producto.id }}',
+          prevEl: '.swiper-prev-{{ producto.id }}',
+        },
+      });
+    {% endfor %}
+
+    // Abrir / cerrar modales
+    document.querySelectorAll('.producto-card').forEach(card => {
+      card.addEventListener('click', () => {
+        document.getElementById(`modal-${card.dataset.pid}`).classList.add('active');
+      });
+    });
+    function closeModal(pid) {
+      document.getElementById(`modal-${pid}`).classList.remove('active');
+    }
+
+    // Filtrado en tiempo real
+    const cards = Array.from(document.querySelectorAll('.producto-card'));
+    let currentSearch = '', currentGender = '', currentCategory = '';
+
+    document.getElementById('search-input').addEventListener('input', e => {
+      currentSearch = e.target.value.toLowerCase(); filterGrid();
+    });
+    document.querySelectorAll('.btn-gender').forEach(btn => {
+      btn.addEventListener('click', () => {
+        currentGender = btn.dataset.gender;
+        document.querySelectorAll('.btn-gender').forEach(b => b.classList.remove('text-indigo-600'));
+        btn.classList.add('text-indigo-600'); filterGrid();
+      });
+    });
+    document.getElementById('category-select').addEventListener('change', e => {
+      currentCategory = e.target.value; filterGrid();
+    });
+    function filterGrid() {
+      cards.forEach(c => {
+        const okName = c.dataset.nombre.includes(currentSearch),
+              okGen  = !currentGender   || c.dataset.genero    === currentGender,
+              okCat  = !currentCategory || c.dataset.categoria === currentCategory;
+        c.classList.toggle('hidden', !(okName && okGen && okCat));
+      });
+    }
+
+    // Mostrar swatches según talle y actualizar stock + max cantidad
+    document.querySelectorAll('[id^="talle-"]').forEach(sel => {
+      sel.addEventListener('change', () => {
+        const pid = sel.id.split('-')[1];
+        document.querySelectorAll(`#colors-${pid} .color-swatch`).forEach(s => {
+          s.classList.toggle('hidden', s.dataset.talle !== sel.value);
+          s.classList.remove('selected');
+        });
+        document.querySelector(`#stock-info-${pid} span`).textContent = '—';
+        const qtyIn = document.querySelector(`#modal-${pid} input[name="quantity"]`);
+        qtyIn.max = 1; qtyIn.value = 1;
+        document.getElementById(`selected-color-${pid}`).value = '';
+      });
+    });
+
+    function selectColor(el) {
+      const pid = el.closest('.modal').id.split('-')[1],
+            stock = parseInt(el.dataset.stock, 10);
+      document.querySelectorAll(`#colors-${pid} .color-swatch`).forEach(s => s.classList.remove('selected'));
+      el.classList.add('selected');
+      document.getElementById(`selected-color-${pid}`).value = el.dataset.color;
+      document.querySelector(`#stock-info-${pid} span`).textContent = stock;
+      const qtyIn = document.querySelector(`#modal-${pid} input[name="quantity"]`);
+      qtyIn.max = stock; if (parseInt(qtyIn.value, 10) > stock) qtyIn.value = stock;
+    }
+  </script>
+{% endblock %}

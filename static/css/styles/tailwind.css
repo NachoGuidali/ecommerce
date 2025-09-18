@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Utilities personalizadas */
+@layer utilities {
+  .h-banner-lg    { height: 110%; }
+  .h-section-lg   { height: 130%; }
+}

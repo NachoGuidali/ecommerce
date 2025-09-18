@@ -1,0 +1,117 @@
+{% extends 'store/base.html' %}
+{% load static %}
+
+{% block title %}Pedido #{{ pedido.id }} – Admin{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">Pedido #{{ pedido.id }}</h1>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+  <!-- Columna izquierda: datos y edición -->
+  <div class="lg:col-span-2 space-y-6">
+
+    <!-- Datos comprador/envío -->
+    <div class="bg-white rounded shadow p-5">
+      <h2 class="text-lg font-semibold mb-4">Datos del cliente y envío</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+        <div><span class="font-medium">Nombre:</span> {{ pedido.buyer_name }}</div>
+        <div><span class="font-medium">DNI:</span> {{ pedido.buyer_dni }}</div>
+        <div><span class="font-medium">Teléfono:</span> {{ pedido.telefono }}</div>
+        <div><span class="font-medium">Fecha:</span> {{ pedido.fecha|date:"d/m/Y H:i" }}</div>
+        <div class="md:col-span-2">
+          <span class="font-medium">Dirección:</span>
+          {{ pedido.calle }} {{ pedido.numero }}, {{ pedido.localidad }}, {{ pedido.provincia }}
+          {% if pedido.entre_calles %}<br><span class="text-gray-600">Entre calles: {{ pedido.entre_calles }}</span>{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Items -->
+    <div class="bg-white rounded shadow p-5">
+      <h2 class="text-lg font-semibold mb-4">Items</h2>
+      <table class="min-w-full table-auto">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="text-left px-3 py-2">Producto</th>
+            <th class="text-left px-3 py-2">Talle</th>
+            <th class="text-left px-3 py-2">Color</th>
+            <th class="text-left px-3 py-2">Cant.</th>
+            <th class="text-right px-3 py-2">Precio</th>
+            <th class="text-right px-3 py-2">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for it in items %}
+          <tr class="border-t">
+            <td class="px-3 py-2">{{ it.producto.nombre }}</td>
+            <td class="px-3 py-2">{{ it.talle }}</td>
+            <td class="px-3 py-2">{{ it.color }}</td>
+            <td class="px-3 py-2">{{ it.cantidad }}</td>
+            <td class="px-3 py-2 text-right">${{ it.precio_unitario }}</td>
+            <td class="px-3 py-2 text-right">${{ it.precio_unitario|floatformat:2|add:"0"|floatformat:2|add:"0" }}{% comment %}solo placeholder{% endcomment %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <div class="text-right mt-4">
+        <div class="text-sm">Envío: ${{ pedido.shipping_cost }}</div>
+        <div class="text-lg font-semibold">Total: ${{ pedido.total }}</div>
+      </div>
+    </div>
+
+    <!-- Edición estado / tracking -->
+    <div class="bg-white rounded shadow p-5">
+      <h2 class="text-lg font-semibold mb-4">Actualizar estado</h2>
+      <form method="post" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {% csrf_token %}
+        <div>
+          <label class="block text-sm font-medium mb-1">Estado</label>
+          <select name="estado" class="w-full border rounded px-3 py-2">
+            <option value="pendiente" {% if pedido.estado == 'pendiente' %}selected{% endif %}>Pendiente</option>
+            <option value="realizado" {% if pedido.estado == 'realizado' %}selected{% endif %}>Pago Realizado</option>
+            <option value="rechazado" {% if pedido.estado == 'rechazado' %}selected{% endif %}>Rechazado</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Tracking</label>
+          <input type="text" name="tracking_number" value="{{ pedido.tracking_number|default_if_none:'' }}"
+                 placeholder="Número de seguimiento"
+                 class="w-full border rounded px-3 py-2" />
+          <p class="text-xs text-gray-500 mt-1">Obligatorio si marcás “Pago Realizado”.</p>
+        </div>
+        <div class="flex items-end">
+          <button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded hover:bg-indigo-700">
+            Guardar cambios
+          </button>
+        </div>
+      </form>
+    </div>
+
+  </div>
+
+  <!-- Columna derecha: logs -->
+  <div>
+    <div class="bg-white rounded shadow p-5">
+      <h2 class="text-lg font-semibold mb-4">Historial</h2>
+      <ul class="space-y-3 text-sm">
+        {% for log in logs %}
+          <li class="border-l-4 border-indigo-600 pl-3">
+            <div class="text-gray-600">{{ log.timestamp|date:"d/m/Y H:i" }}</div>
+            <div class="font-medium">{{ log.action }}</div>
+            {% if log.note %}<div class="text-gray-700">{{ log.note }}</div>{% endif %}
+          </li>
+        {% empty %}
+          <li class="text-gray-500">Sin registros por el momento.</li>
+        {% endfor %}
+      </ul>
+    </div>
+    <div class="mt-6">
+      <a href="{% url 'store:admin_orders' %}" class="inline-block text-indigo-600 hover:text-indigo-800">
+        ← Volver al listado
+      </a>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

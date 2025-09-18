@@ -1,0 +1,112 @@
+{# store/templates/store/cart.html #}
+{% extends 'store/base.html' %}
+{% load static %}
+
+{% block title %}Carrito – Brooklyn Store{% endblock %}
+
+{% block content %}
+  <h2 class="text-2xl font-semibold mb-6 scroll-item">Tu Carrito</h2>
+
+  {% if items %}
+    <div class="bg-white shadow rounded p-6 mb-8 scroll-item">
+      <table class="w-full table-auto mb-4">
+        <thead>
+          <tr>
+            <th class="text-left py-2">Producto</th>
+            <th class="py-2">Talle</th>
+            <th class="py-2">Color</th>
+            <th class="text-center py-2">Cantidad</th>
+            <th class="text-right py-2">Precio</th>
+            <th class="text-right py-2">Subtotal</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+            <tr class="border-t scroll-item">
+              <td class="py-4 flex items-center space-x-4">
+                {% if item.producto.imagen %}
+                  <img
+                    src="{{ item.producto.imagen.url }}"
+                    alt="{{ item.producto.nombre }}"
+                    class="w-16 h-16 object-contain object-center rounded"
+                  />
+                {% else %}
+                  <img
+                    src="{% static 'images/no-image.jpg' %}"
+                    alt="Sin imagen"
+                    class="w-16 h-16 object-contain object-center rounded"
+                  />
+                {% endif %}
+                <span>{{ item.producto.nombre }}</span>
+              </td>
+              <td class="py-4">{{ item.talle }}</td>
+              <td class="py-4">{{ item.color }}</td>
+              <td class="py-4 text-center flex items-center justify-center space-x-2">
+                {# Decrementar cantidad #}
+                <form method="post" action="{% url 'store:decrement_cart_item' item.key %}">
+                  {% csrf_token %}
+                  <button
+                    type="submit"
+                    class="px-2 py-1 border rounded hover:bg-gray-100"
+                    aria-label="Disminuir cantidad"
+                  >−</button>
+                </form>
+
+                <span class="px-3 py-1">{{ item.cantidad }}</span>
+
+                {# Incrementar cantidad #}
+                <form method="post" action="{% url 'store:increment_cart_item' item.key %}">
+                  {% csrf_token %}
+                  <button
+                    type="submit"
+                    class="px-2 py-1 border rounded hover:bg-gray-100"
+                    aria-label="Aumentar cantidad"
+                  >+</button>
+                </form>
+              </td>
+              <td class="py-4 text-right">${{ item.producto.precio }}</td>
+              <td class="py-4 text-right">${{ item.subtotal }}</td>
+              <td class="py-4 text-right">
+                {# Eliminar línea completa #}
+                <form method="post" action="{% url 'store:remove_from_cart' item.key %}">
+                  {% csrf_token %}
+                  <button
+                    type="submit"
+                    class="text-red-600 hover:text-red-800"
+                  >
+                    Eliminar
+                  </button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <div class="text-right font-bold text-xl">
+        Total: ${{ total }}
+      </div>
+
+      <div class="mt-6 text-right">
+        <a
+          href="{% url 'store:checkout' %}"
+          class="bg-indigo-600 text-white px-6 py-3 rounded hover:bg-indigo-700"
+        >
+          Continuar al Checkout
+        </a>
+      </div>
+    </div>
+
+  {% else %}
+    <p class="text-center py-12 scroll-item">Tu carrito está vacío.</p>
+    <div class="text-center scroll-item">
+      <a
+        href="{% url 'store:products' %}"
+        class="bg-indigo-600 text-white px-6 py-3 rounded hover:bg-indigo-700"
+      >
+        Ver Productos
+      </a>
+    </div>
+  {% endif %}
+{% endblock %}
